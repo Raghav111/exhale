@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exhale — Quit Vaping Companion</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Exhale">
+<meta name="theme-color" content="#081018">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#081018; --bg2:#0B1722; --surface:#0E1B26; --surface2:#13242F; --line:#1C3140;
+  --ink:#E9F1F6; --muted:#8AA0B4; --dim:#5C7184;
+  --sea:#34D8A4; --sea-dim:#1C7A60; --blue:#56A8F5; --gold:#F2B741; --warm:#FF9472; --rose:#F87C8E;
+  --shadow:0 18px 50px rgba(0,0,0,.45);
+  --r:18px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:
+    radial-gradient(1200px 700px at 50% -10%, rgba(86,168,245,.10), transparent 60%),
+    radial-gradient(900px 600px at 85% 25%, rgba(52,216,164,.06), transparent 55%),
+    var(--bg);
+  color:var(--ink);
+  font-family:"Instrument Sans",system-ui,sans-serif;
+  line-height:1.55;
+  min-height:100vh;
+  padding-bottom:110px; /* room for panic bar */
+}
+.wrap{max-width:760px;margin:0 auto;padding:0 18px}
+h1,h2,h3{font-family:"Bricolage Grotesque","Instrument Sans",sans-serif}
+.mono{font-family:"Space Grotesk",monospace;font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer;border:none}
+input,select{font-family:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+
+/* ---------- header ---------- */
+header{padding:26px 0 4px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .dot{width:12px;height:12px;border-radius:50%;background:var(--sea);box-shadow:0 0 14px var(--sea)}
+.brand h1{font-size:1.25rem;font-weight:800;letter-spacing:.4px}
+.brand span{color:var(--muted);font-size:.78rem;display:block;font-family:"Instrument Sans";font-weight:400;letter-spacing:.6px;text-transform:uppercase}
+.lvl-chip{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:.8rem;color:var(--gold);display:flex;gap:7px;align-items:center}
+
+/* ---------- hero / breathing orb ---------- */
+.hero{position:relative;text-align:center;padding:38px 0 26px}
+.orb-stage{position:relative;width:min(78vw,300px);height:min(78vw,300px);margin:0 auto 8px;display:grid;place-items:center}
+.orb{
+  position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 38% 32%, rgba(86,168,245,.55), rgba(52,216,164,.28) 45%, rgba(8,16,24,0) 72%);
+  filter:blur(2px);
+  animation:breathe 9s ease-in-out infinite;
+}
+.orb::after{content:"";position:absolute;inset:14%;border-radius:50%;border:1px solid rgba(233,241,246,.12)}
+.orb-ring{position:absolute;inset:6%;border-radius:50%;border:1px dashed rgba(138,160,180,.25);animation:spin 70s linear infinite}
+@keyframes breathe{0%,100%{transform:scale(.86);opacity:.75}50%{transform:scale(1.04);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.timer-block{position:relative;z-index:2}
+.timer-label{font-size:.74rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted)}
+.timer{display:flex;justify-content:center;gap:6px;margin-top:6px}
+.tcell{min-width:62px}
+.tcell .num{font-size:clamp(1.9rem,8vw,2.7rem);font-weight:700;color:var(--ink);text-shadow:0 0 24px rgba(86,168,245,.35)}
+.tcell .unit{font-size:.66rem;text-transform:uppercase;letter-spacing:1.6px;color:var(--dim)}
+.tsep{font-size:clamp(1.6rem,7vw,2.2rem);color:var(--dim);padding-top:2px}
+.motiv{margin:18px auto 0;max-width:480px;color:var(--warm);font-size:.98rem;min-height:1.6em;transition:opacity .6s}
+.hero-actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+.btn{border-radius:12px;padding:10px 18px;font-weight:600;font-size:.88rem;transition:transform .15s,box-shadow .15s,background .2s}
+.btn:active{transform:scale(.97)}
+.btn-ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn-ghost:hover{background:var(--surface2)}
+.btn-soft-red{background:rgba(248,124,142,.1);color:var(--rose);border:1px solid rgba(248,124,142,.3)}
+.btn-soft-red:hover{background:rgba(248,124,142,.18)}
+.btn-sea{background:linear-gradient(135deg,var(--sea),#27b9c9);color:#04231A}
+.btn-sea:hover{box-shadow:0 6px 24px rgba(52,216,164,.35)}
+
+/* ---------- sections ---------- */
+section{margin:34px 0}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.sec-head h2{font-size:1.15rem;font-weight:800}
+.sec-head .hint{font-size:.76rem;color:var(--dim)}
+.card{background:linear-gradient(180deg,var(--surface),var(--bg2));border:1px solid var(--line);border-radius:var(--r);padding:18px}
+
+/* ---------- stats grid ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:linear-gradient(180deg,var(--surface),var(--bg2));border:1px solid var(--line);border-radius:var(--r);padding:16px 14px;position:relative;overflow:hidden}
+.stat .k{font-size:.7rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);margin-bottom:6px}
+.stat .v{font-size:1.45rem;font-weight:700}
+.stat .sub{font-size:.74rem;color:var(--dim);margin-top:3px}
+.v.sea{color:var(--sea)} .v.blue{color:var(--blue)} .v.gold{color:var(--gold)} .v.warm{color:var(--warm)}
+.gauge-wrap{display:flex;align-items:center;gap:12px}
+.gauge{width:84px;height:48px;flex-shrink:0}
+.xpbar{height:8px;background:var(--bg);border-radius:99px;overflow:hidden;margin-top:8px;border:1px solid var(--line)}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#ffd97a);border-radius:99px;transition:width 1s ease}
+
+/* ---------- milestones ---------- */
+.mstone{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);position:relative}
+.mstone:last-child{border-bottom:none}
+.m-icon{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:1.2rem;flex-shrink:0;background:var(--bg);border:1px solid var(--line);position:relative;z-index:1;transition:all .4s}
+.mstone.done .m-icon{background:radial-gradient(circle at 35% 30%,rgba(52,216,164,.35),rgba(52,216,164,.08));border-color:var(--sea);box-shadow:0 0 16px rgba(52,216,164,.3)}
+.mstone.next .m-icon{border-color:var(--blue);box-shadow:0 0 14px rgba(86,168,245,.3)}
+.mstone.locked{opacity:.45;filter:saturate(.4)}
+.m-body{flex:1;min-width:0}
+.m-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.m-title{font-weight:600;font-size:.95rem}
+.m-when{font-size:.72rem;color:var(--dim);white-space:nowrap}
+.mstone.done .m-when{color:var(--sea)}
+.m-desc{font-size:.83rem;color:var(--muted);margin-top:2px}
+.m-bar{height:6px;background:var(--bg);border-radius:99px;margin-top:9px;overflow:hidden;border:1px solid var(--line)}
+.m-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--sea));transition:width 1s linear}
+.mstone.done .m-bar i{background:var(--sea)}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.35) rotate(-6deg)}100%{transform:scale(1)}}
+.m-icon.pop{animation:pop .7s cubic-bezier(.3,1.6,.4,1)}
+.healing-now{background:linear-gradient(135deg,rgba(86,168,245,.12),rgba(52,216,164,.10));border:1px solid rgba(86,168,245,.3);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;font-size:.9rem}
+.healing-now b{color:var(--sea)}
+.healing-now .pct{color:var(--blue);font-weight:700}
+
+/* ---------- badges ---------- */
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.badge{background:linear-gradient(180deg,var(--surface),var(--bg2));border:1px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center;transition:all .3s}
+.badge .bi{font-size:1.7rem;display:block;filter:grayscale(1);opacity:.35;transition:all .4s}
+.badge .bn{font-size:.68rem;margin-top:7px;color:var(--dim);line-height:1.3}
+.badge.earned{border-color:rgba(242,183,65,.45);box-shadow:0 0 18px rgba(242,183,65,.12)}
+.badge.earned .bi{filter:none;opacity:1}
+.badge.earned .bn{color:var(--gold)}
+
+/* ---------- money ---------- */
+.money-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.field label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:6px}
+.field input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:10px 12px;font-size:.95rem}
+.field input:focus{border-color:var(--blue)}
+.money-big{font-size:2.4rem;font-weight:700;color:var(--sea);text-shadow:0 0 22px rgba(52,216,164,.3)}
+.buy-line{margin-top:10px;font-size:.9rem;color:var(--warm)}
+.money-meta{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap}
+.money-meta div{font-size:.78rem;color:var(--muted)}
+.money-meta b{color:var(--ink);display:block;font-size:1rem}
+
+/* ---------- quit plan accordion ---------- */
+details{border:1px solid var(--line);border-radius:14px;margin-bottom:10px;background:linear-gradient(180deg,var(--surface),var(--bg2));overflow:hidden}
+summary{padding:14px 16px;font-weight:600;font-size:.93rem;cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary .ph{width:28px;height:28px;border-radius:8px;background:rgba(86,168,245,.12);color:var(--blue);display:grid;place-items:center;font-size:.85rem;flex-shrink:0}
+summary::after{content:"+";margin-left:auto;color:var(--dim);font-size:1.2rem;transition:transform .25s}
+details[open] summary::after{transform:rotate(45deg)}
+.plan-body{padding:0 16px 16px;font-size:.86rem;color:var(--muted)}
+.plan-body ul{padding-left:18px;margin-top:6px}
+.plan-body li{margin-bottom:7px}
+.plan-body b{color:var(--ink)}
+
+/* ---------- streak history ---------- */
+.hist-item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:.85rem}
+.hist-item:last-child{border-bottom:none}
+.hist-item .d{color:var(--muted)}
+.empty{color:var(--dim);font-size:.85rem;text-align:center;padding:10px 0}
+
+/* ---------- panic bar ---------- */
+.panic-bar{position:fixed;bottom:0;left:0;right:0;padding:14px 18px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(8,16,24,0),rgba(8,16,24,.92) 35%);z-index:50;display:flex;justify-content:center}
+.panic-btn{
+  width:100%;max-width:724px;padding:17px;border-radius:16px;font-size:1.02rem;font-weight:800;letter-spacing:.6px;
+  font-family:"Bricolage Grotesque",sans-serif;color:#2A0E08;
+  background:linear-gradient(135deg,#FF9472,#F2B741);
+  box-shadow:0 10px 34px rgba(255,148,114,.4);
+  animation:pulse 2.6s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 10px 30px rgba(255,148,114,.35)}50%{box-shadow:0 10px 44px rgba(255,148,114,.6)}}
+.panic-btn:active{transform:scale(.98)}
+
+/* ---------- modal / overlay ---------- */
+.overlay{position:fixed;inset:0;background:rgba(4,9,14,.86);backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center;padding:18px;overflow-y:auto}
+.overlay.show{display:flex}
+.modal{background:linear-gradient(180deg,var(--surface2),var(--surface));border:1px solid var(--line);border-radius:22px;max-width:440px;width:100%;padding:26px;box-shadow:var(--shadow);text-align:center;animation:rise .35s cubic-bezier(.2,1.2,.3,1)}
+@keyframes rise{from{transform:translateY(26px);opacity:0}to{transform:none;opacity:1}}
+.modal h3{font-size:1.3rem;font-weight:800;margin-bottom:8px}
+.modal p{font-size:.9rem;color:var(--muted)}
+.modal .row{display:flex;gap:10px;margin-top:20px}
+.modal .row .btn{flex:1;padding:13px}
+
+/* breathing exercise */
+.breath-stage{width:230px;height:230px;margin:18px auto;display:grid;place-items:center;position:relative}
+.breath-orb{
+  width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle at 36% 30%, rgba(86,168,245,.85), rgba(52,216,164,.5) 55%, rgba(52,216,164,.15));
+  box-shadow:0 0 50px rgba(86,168,245,.45);
+  transition:transform 4s ease-in-out;
+}
+.breath-orb.inhale{transform:scale(1.75);transition-duration:4s}
+.breath-orb.hold{transform:scale(1.75);transition-duration:.3s}
+.breath-orb.exhale{transform:scale(1);transition-duration:7s}
+.breath-phase{font-family:"Bricolage Grotesque";font-size:1.5rem;font-weight:800;min-height:2em;color:var(--blue)}
+.breath-count{font-size:2.2rem;font-weight:700;color:var(--ink)}
+.breath-total{font-size:.78rem;color:var(--dim);margin-top:4px}
+.tip-box{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:14px;text-align:left;font-size:.86rem}
+.tip-box .t{color:var(--sea);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:1.4px;margin-bottom:5px}
+.quote{font-style:italic;color:var(--warm)}
+.xp-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--gold),#ffd97a);color:#3A2A05;font-weight:700;padding:11px 22px;border-radius:99px;z-index:200;box-shadow:0 8px 26px rgba(242,183,65,.45);animation:toast 2.8s forwards;font-size:.9rem}
+@keyframes toast{0%{transform:translate(-50%,-70px);opacity:0}12%{transform:translate(-50%,0);opacity:1}82%{opacity:1}100%{transform:translate(-50%,-12px);opacity:0}}
+
+.dt-input{background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:11px 12px;font-size:.95rem;width:100%;color-scheme:dark}
+.note{font-size:.76rem;color:var(--dim);margin-top:10px}
+footer{margin:44px 0 10px;text-align:center;font-size:.72rem;color:var(--dim)}
+@media (max-width:480px){
+  .money-grid{grid-template-columns:1fr}
+  .tcell{min-width:54px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001s !important;transition-duration:.001s !important}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="dot" aria-hidden="true"></div>
+      <h1>Exhale<span>quit-vaping companion</span></h1>
+    </div>
+    <div class="lvl-chip" id="lvlChip">⭐ <span id="lvlName">Fresh Start</span></div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="orb-stage" aria-hidden="true">
+      <div class="orb"></div>
+      <div class="orb-ring"></div>
+      <div class="timer-block">
+        <div class="timer-label">Puff-free for</div>
+        <div class="timer mono" id="timer" aria-live="off">
+          <div class="tcell"><div class="num" id="tD">0</div><div class="unit">days</div></div>
+          <div class="tsep">:</div>
+          <div class="tcell"><div class="num" id="tH">00</div><div class="unit">hrs</div></div>
+          <div class="tsep">:</div>
+          <div class="tcell"><div class="num" id="tM">00</div><div class="unit">min</div></div>
+          <div class="tsep">:</div>
+          <div class="tcell"><div class="num" id="tS">00</div><div class="unit">sec</div></div>
+        </div>
+      </div>
+    </div>
+    <p class="motiv" id="motiv">Every breath you take right now is cleaner than the last.</p>
+    <div class="hero-actions">
+      <button class="btn btn-ghost" id="editQuitBtn">🕐 Set last puff time</button>
+      <button class="btn btn-soft-red" id="relapseBtn">I slipped — reset timer</button>
+    </div>
+  </div>
+
+  <!-- STATS DASHBOARD -->
+  <section aria-labelledby="statsH">
+    <div class="sec-head"><h2 id="statsH">Your dashboard</h2><span class="hint">live · updates every second</span></div>
+    <div class="stats">
+      <div class="stat"><div class="k">Money saved</div><div class="v sea mono" id="stMoney">$0.00</div><div class="sub" id="stMoneyRate">—</div></div>
+      <div class="stat">
+        <div class="k">Health score</div>
+        <div class="gauge-wrap">
+          <svg class="gauge" viewBox="0 0 100 56" aria-hidden="true">
+            <path d="M8 50 A42 42 0 0 1 92 50" fill="none" stroke="#152733" stroke-width="9" stroke-linecap="round"/>
+            <path id="gaugeArc" d="M8 50 A42 42 0 0 1 92 50" fill="none" stroke="url(#gg)" stroke-width="9" stroke-linecap="round" stroke-dasharray="132" stroke-dashoffset="132"/>
+            <defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#56A8F5"/><stop offset="1" stop-color="#34D8A4"/></linearGradient></defs>
+          </svg>
+          <div><div class="v blue mono" id="stHealth">0</div><div class="sub">of 100</div></div>
+        </div>
+      </div>
+      <div class="stat"><div class="k">Cravings beaten</div><div class="v warm mono" id="stCravings">0</div><div class="sub">each one = +50 XP</div></div>
+      <div class="stat"><div class="k">Milestones</div><div class="v sea mono" id="stMilestones">0 / 12</div><div class="sub" id="stNextM">—</div></div>
+      <div class="stat" style="grid-column:1/-1">
+        <div class="k">Level <span id="lvlNum" style="color:var(--gold)">1</span> — <span id="lvlName2" style="color:var(--gold)">Fresh Start</span></div>
+        <div class="v gold mono" id="stXP">0 XP</div>
+        <div class="xpbar"><i id="xpFill" style="width:0%"></i></div>
+        <div class="sub" id="xpNext">—</div>
+      </div>
+      <div class="stat"><div class="k">Current streak</div><div class="v blue mono" id="stStreak">0d</div><div class="sub">this attempt</div></div>
+      <div class="stat"><div class="k">Longest streak</div><div class="v gold mono" id="stLongest">0d</div><div class="sub" id="stAttempts">attempt #1</div></div>
+    </div>
+  </section>
+
+  <!-- HEALTH TIMELINE -->
+  <section aria-labelledby="mileH">
+    <div class="sec-head"><h2 id="mileH">Your body, healing</h2><span class="hint">based on cessation research</span></div>
+    <div class="healing-now" id="healingNow">Loading…</div>
+    <div class="card" id="milestoneList"></div>
+  </section>
+
+  <!-- BADGES -->
+  <section aria-labelledby="badgeH">
+    <div class="sec-head"><h2 id="badgeH">Achievements</h2><span class="hint" id="badgeCount">0 earned</span></div>
+    <div class="badges" id="badgeGrid"></div>
+  </section>
+
+  <!-- MONEY -->
+  <section aria-labelledby="moneyH">
+    <div class="sec-head"><h2 id="moneyH">Money back in your pocket</h2></div>
+    <div class="card">
+      <div class="money-grid">
+        <div class="field"><label for="podsPerWeek">Pods / disposables per week</label><input type="number" id="podsPerWeek" min="0" step="0.5" inputmode="decimal"></div>
+        <div class="field"><label for="costPerPod">Cost per pod / device ($)</label><input type="number" id="costPerPod" min="0" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="k" style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted)">Saved since your last puff</div>
+      <div class="money-big mono" id="moneyBig">$0.00</div>
+      <div class="buy-line" id="buyLine"></div>
+      <div class="money-meta">
+        <div>Per day<b class="mono" id="mDay">$0</b></div>
+        <div>Per month<b class="mono" id="mMonth">$0</b></div>
+        <div>Per year<b class="mono" id="mYear">$0</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUIT PLAN -->
+  <section aria-labelledby="planH">
+    <div class="sec-head"><h2 id="planH">Your quit plan</h2><span class="hint">evidence-informed strategies</span></div>
+
+    <details open>
+      <summary><span class="ph">0</span>Preparation — set yourself up to win</summary>
+      <div class="plan-body"><ul>
+        <li><b>Remove every device.</b> Throw out vapes, pods, and chargers tonight. Distance is your strongest ally — a craving that requires a trip to the store is far easier to outlast than one within arm's reach.</li>
+        <li><b>Map your triggers.</b> Most vaping is cued: after meals, with coffee, driving, stress, drinking, boredom, certain friends. Write your top five down — you'll plan a counter-move for each below.</li>
+        <li><b>Tell your people.</b> Accountability roughly doubles success odds. Tell at least two people your quit date and ask them to check in on days 3 and 7.</li>
+        <li><b>Stock replacements.</b> Sugar-free gum, toothpicks, cinnamon sticks, sparkling water, fidget toy. Hand-to-mouth habit needs a stand-in for a few weeks.</li>
+        <li><b>Consider NRT.</b> Nicotine patches, gum, or lozenges can ease withdrawal, especially for heavy use. Talk to a pharmacist or doctor about what fits you.</li>
+      </ul></div>
+    </details>
+
+    <details>
+      <summary><span class="ph">1</span>First 72 hours — the storm</summary>
+      <div class="plan-body"><ul>
+        <li><b>What to expect:</b> irritability, restlessness, brain fog, intense cravings. This is nicotine leaving your system — it peaks around day 2–3 and then genuinely fades. It's withdrawal, not who you are.</li>
+        <li><b>The 5-minute rule:</b> cravings crest and pass in 3–5 minutes whether or not you vape. When one hits, smash the panic button below and ride it out — you only have to outlast it, not defeat it.</li>
+        <li><b>4 Ds:</b> Delay, Deep breathe, Drink water, Do something else. Pick one instantly when a craving lands.</li>
+        <li><b>Change your loops.</b> Take a different route, sit in a different chair, swap coffee for tea for 3 days. Breaking the cue chain breaks half the craving.</li>
+        <li><b>Sleep & sugar:</b> blood sugar dips mimic cravings. Eat regular meals, keep fruit handy, go to bed early — your brain is rewiring and it's tiring work.</li>
+      </ul></div>
+    </details>
+
+    <details>
+      <summary><span class="ph">2</span>First week — building momentum</summary>
+      <div class="plan-body"><ul>
+        <li><b>Move daily.</b> Even a 10-minute walk measurably cuts craving intensity and lifts mood. Exercise is the closest thing to a legal craving-killer.</li>
+        <li><b>Hydrate aggressively.</b> Water helps flush nicotine metabolites and gives your hands and mouth something to do.</li>
+        <li><b>Audit your wins.</b> Check your milestones here every morning. People who track progress are significantly more likely to stay quit.</li>
+        <li><b>Dodge the danger zones.</b> If parties or certain friends mean vaping, it's okay to skip them for one week. It's a week, not forever.</li>
+        <li><b>Beware "just one."</b> One puff reliably reignites the receptor cycle. The craving for "just one" is the addiction negotiating — name it and decline.</li>
+      </ul></div>
+    </details>
+
+    <details>
+      <summary><span class="ph">3</span>First month — rewiring</summary>
+      <div class="plan-body"><ul>
+        <li><b>Stack a new habit on each trigger.</b> After-meal vape → after-meal walk or tea ritual. Same cue, new reward — that's how habits actually get replaced.</li>
+        <li><b>Spend the savings visibly.</b> Move your saved money (tracked above) into a separate jar or account weekly and buy yourself something real at day 30.</li>
+        <li><b>Expect ambush cravings.</b> Random strong cravings in week 3–4 are normal echoes, not failure. They pass faster each time.</li>
+        <li><b>Mind your mood.</b> If low mood or anxiety persists past a couple of weeks, talk to a doctor — support exists and using it is strength.</li>
+      </ul></div>
+    </details>
+
+    <details>
+      <summary><span class="ph">∞</span>Long-term — staying free</summary>
+      <div class="plan-body"><ul>
+        <li><b>Identity over willpower.</b> Shift from "I'm trying to quit" to "I don't vape." Identity-based change is the most durable kind.</li>
+        <li><b>Have a stress plan.</b> Most long-term relapses happen during high stress. Decide now what you'll do instead: call someone, walk, breathe, gym.</li>
+        <li><b>Alcohol is the #1 relapse trigger.</b> For the first few months, decide your response to "want a hit?" before the drink, not during it.</li>
+        <li><b>If you slip, contain it.</b> A lapse is an event, not a verdict. Reset the timer, learn the trigger, keep your history below — every previous streak still rewired your brain.</li>
+        <li><b>Help someone else quit.</b> Nothing cements your own freedom like guiding a friend through theirs.</li>
+      </ul></div>
+    </details>
+  </section>
+
+  <!-- STREAK HISTORY -->
+  <section aria-labelledby="histH">
+    <div class="sec-head"><h2 id="histH">Streak history</h2><span class="hint">every attempt taught you something</span></div>
+    <div class="card" id="histList"><div class="empty">No previous attempts logged — this is the one. 💪</div></div>
+  </section>
+
+  <footer>Exhale · Your data stays on your device · Health timeline adapted from smoking/nicotine cessation research (CDC, NHS). Not a substitute for medical advice — for extra support, free quitlines like 1-800-QUIT-NOW exist.</footer>
+</div>
+
+<!-- PANIC BAR -->
+<div class="panic-bar"><button class="panic-btn" id="panicBtn">🌊 I'M CRAVING RIGHT NOW</button></div>
+
+<!-- PANIC OVERLAY -->
+<div class="overlay" id="panicOverlay" role="dialog" aria-modal="true" aria-label="Craving support">
+  <div class="modal">
+    <div id="breathView">
+      <h3>Breathe with the orb</h3>
+      <p>60 seconds. In through the nose, slow out through the mouth. The craving will crest and fall before we're done.</p>
+      <div class="breath-stage"><div class="breath-orb" id="breathOrb"></div></div>
+      <div class="breath-phase" id="breathPhase">Get ready…</div>
+      <div class="breath-count mono" id="breathCount">60</div>
+      <div class="breath-total">seconds remaining</div>
+      <div class="row"><button class="btn btn-ghost" id="panicCancel" style="flex:1;padding:13px">Stop</button></div>
+    </div>
+    <div id="afterView" style="display:none">
+      <h3>You just beat it. 🌅</h3>
+      <p>That craving is already weaker than it was 60 seconds ago — and so is the next one.</p>
+      <div class="tip-box"><div class="t">Try this next</div><div id="tipText"></div></div>
+      <div class="tip-box"><div class="t">Words to keep</div><div class="quote" id="quoteText"></div></div>
+      <div class="row"><button class="btn btn-sea" id="panicDone" style="flex:1;padding:13px">Claim +50 XP</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- RELAPSE MODAL -->
+<div class="overlay" id="relapseOverlay" role="dialog" aria-modal="true" aria-label="Reset timer">
+  <div class="modal">
+    <h3>A slip, not a fall. 🌱</h3>
+    <p>Relapse is part of most successful quits — people often take several attempts, and every attempt physically rewires your brain a little more. Your <b style="color:var(--gold)" id="relapseStreakTxt">streak</b> isn't erased: it's logged below as proof you can do this. Be as kind to yourself as you'd be to a friend.</p>
+    <p style="margin-top:10px">Reset the timer to now and start the next chapter?</p>
+    <div class="row">
+      <button class="btn btn-ghost" id="relapseCancel">Keep my streak</button>
+      <button class="btn btn-sea" id="relapseConfirm">Reset & continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- SET TIME MODAL -->
+<div class="overlay" id="timeOverlay" role="dialog" aria-modal="true" aria-label="Set last puff time">
+  <div class="modal" style="text-align:left">
+    <h3 style="text-align:center">When was your last puff?</h3>
+    <p style="text-align:center;margin-bottom:16px">Your whole journey counts from this moment.</p>
+    <div class="field"><label for="quitInput">Date & time</label><input type="datetime-local" id="quitInput" class="dt-input"></div>
+    <div class="note">Tip: it can be in the past — if you quit yesterday, set yesterday and your milestones unlock instantly.</div>
+    <div class="row">
+      <button class="btn btn-ghost" id="timeCancel">Cancel</button>
+      <button class="btn btn-sea" id="timeSave">Start counting</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- persistent storage (with safe fallback) ---------------- */
+const KEY="exhale-state-v1";
+let memStore=null;
+const store={
+  async load(){
+    // 1) localStorage — works when the file is hosted on your own site / home-screen app
+    try{const v=localStorage.getItem(KEY);if(v)return JSON.parse(v);}catch(e){}
+    // 2) Claude artifact persistent storage
+    try{
+      if(window.storage&&window.storage.get){
+        const r=await window.storage.get(KEY);
+        if(r&&r.value)return JSON.parse(r.value);
+      }
+    }catch(e){/* key missing or storage unavailable */}
+    return memStore;
+  },
+  async save(s){
+    memStore=s;
+    const json=JSON.stringify(s);
+    try{localStorage.setItem(KEY,json);}catch(e){}
+    try{
+      if(window.storage&&window.storage.set){await window.storage.set(KEY,json);}
+    }catch(e){}
+  }
+};
+
+/* ---------------- state ---------------- */
+let S={
+  quitTime:null,            // ms epoch of last puff
+  podsPerWeek:3,
+  costPerPod:15,
+  cravingsResisted:0,
+  bonusXP:0,
+  history:[],               // [{start,end,days}]
+  attempt:1,
+  earned:{}                 // badgeId -> timestamp
+};
+let prevDoneCount=-1;
+let saveTimer=null;
+function persist(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>store.save(S),400);}
+
+/* ---------------- data ---------------- */
+const MS={m:60000,h:3600000,d:86400000};
+const MILESTONES=[
+ {t:20*MS.m, icon:"💓", title:"20 minutes", desc:"Heart rate and blood pressure begin dropping back toward your normal baseline."},
+ {t:2*MS.h,  icon:"🩸", title:"2 hours", desc:"Nicotine in your blood has fallen by about half. Circulation to hands and feet starts improving."},
+ {t:12*MS.h, icon:"🫁", title:"12 hours", desc:"Blood oxygen levels are normalizing as your cardiovascular system works without fresh nicotine."},
+ {t:24*MS.h, icon:"🧠", title:"24 hours", desc:"Most nicotine is out of your bloodstream. Anxiety may peak today — it's withdrawal talking, and it fades."},
+ {t:48*MS.h, icon:"👃", title:"48 hours", desc:"Damaged nerve endings begin regrowing. Taste and smell start sharpening noticeably."},
+ {t:72*MS.h, icon:"🌬️", title:"72 hours", desc:"Nicotine is fully eliminated. Bronchial tubes relax — breathing feels easier. Cravings peak here, then decline."},
+ {t:7*MS.d,  icon:"🛡️", title:"1 week", desc:"The hardest stretch is behind you. People who reach one week are roughly 9× more likely to quit for good."},
+ {t:14*MS.d, icon:"⚡", title:"2 weeks", desc:"Circulation and lung function keep improving. Walking and stairs feel measurably easier."},
+ {t:30*MS.d, icon:"🌿", title:"1 month", desc:"Cilia — the tiny brushes that clean your airways — are regrowing. Less coughing, more energy, fewer ambush cravings."},
+ {t:90*MS.d, icon:"🏃", title:"3 months", desc:"Circulation has substantially improved and lung function can be up meaningfully. Exercise capacity is climbing."},
+ {t:182*MS.d,icon:"🧘", title:"6 months", desc:"Airway inflammation is way down. You're handling stress without reaching for nicotine — the rewiring is real."},
+ {t:365*MS.d,icon:"🏆", title:"1 year", desc:"Your risk of coronary heart disease is about half that of a continuing user. Dopamine signaling has largely normalized. You're free."}
+];
+
+const LEVELS=[
+ {xp:0,name:"Fresh Start"},{xp:60,name:"Hour Hero"},{xp:360,name:"Steady Climber"},
+ {xp:1440,name:"Day Warrior"},{xp:4320,name:"Storm Rider"},{xp:10080,name:"Week Champion"},
+ {xp:20160,name:"Habit Breaker"},{xp:43200,name:"Lung Restorer"},{xp:129600,name:"Quarter Conqueror"},
+ {xp:262080,name:"Half-Year Hero"},{xp:525600,name:"Freedom Legend"}
+];
+
+const BADGES=[
+ {id:"h1",icon:"⏱️",name:"First Hour",test:s=>elapsed()>=MS.h},
+ {id:"d1",icon:"🌅",name:"First Day",test:s=>elapsed()>=MS.d},
+ {id:"d3",icon:"🌬️",name:"Nicotine-Free (72h)",test:s=>elapsed()>=3*MS.d},
+ {id:"w1",icon:"🛡️",name:"First Week",test:s=>elapsed()>=7*MS.d},
+ {id:"w2",icon:"⚡",name:"Two Weeks",test:s=>elapsed()>=14*MS.d},
+ {id:"m1",icon:"🌿",name:"One Month",test:s=>elapsed()>=30*MS.d},
+ {id:"m3",icon:"🏃",name:"Three Months",test:s=>elapsed()>=90*MS.d},
+ {id:"m6",icon:"🧘",name:"Six Months",test:s=>elapsed()>=182*MS.d},
+ {id:"y1",icon:"🏆",name:"One Year",test:s=>elapsed()>=365*MS.d},
+ {id:"c1",icon:"🌊",name:"Craving Slayer",test:s=>s.cravingsResisted>=1},
+ {id:"c5",icon:"🔥",name:"5 Cravings Beaten",test:s=>s.cravingsResisted>=5},
+ {id:"c25",icon:"💪",name:"25 Cravings Beaten",test:s=>s.cravingsResisted>=25},
+ {id:"$50",icon:"💵",name:"$50 Saved",test:s=>moneySaved()>=50},
+ {id:"$200",icon:"💰",name:"$200 Saved",test:s=>moneySaved()>=200},
+ {id:"a2",icon:"🌱",name:"Came Back Stronger",test:s=>s.attempt>=2&&elapsed()>=MS.d}
+];
+
+const BUYS=[
+ [5,"a really good coffee ☕"],[15,"a movie ticket 🎬"],[30,"a new book and a coffee 📚"],
+ [60,"a nice dinner out 🍝"],[120,"a concert ticket 🎟️"],[180,"a massage 💆"],
+ [300,"a new pair of great sneakers 👟"],[500,"a weekend getaway 🏕️"],
+ [900,"a round-trip flight somewhere warm ✈️"],[1500,"a new phone 📱"],[3000,"a serious vacation 🏝️"]
+];
+
+const TIPS=[
+ "Drink a full glass of ice-cold water slowly — cold + swallowing interrupts the craving circuit.",
+ "Step outside and walk to the end of the street and back. Movement metabolizes the urge.",
+ "Text the friend you told about quitting. Say only: \"craving — talk to me about anything else.\"",
+ "Brush your teeth. Minty-clean mouths talk you out of vaping surprisingly well.",
+ "Do 15 push-ups or squats right now. The urge rarely survives the burn.",
+ "Eat something crunchy — carrots, apple, pretzels. Your jaw wants a job.",
+ "Put a toothpick, straw, or cinnamon stick where the vape used to go. Hands and mouth occupied = brain satisfied.",
+ "Write one sentence: what triggered this craving? Naming the trigger defuses it next time.",
+ "Open your money-saved number above and decide what the next $20 buys.",
+ "Wash your face with cold water. The mammalian dive reflex literally calms your nervous system."
+];
+
+const QUOTES=[
+ "Cravings are like waves — they rise, they crest, and they always, always break.",
+ "You don't have to quit forever today. You only have to not vape for the next five minutes.",
+ "Discomfort is the feeling of your brain healing.",
+ "The urge is loud because it's dying.",
+ "Every craving you outlast makes the next one quieter.",
+ "You've survived 100% of your worst cravings so far.",
+ "Freedom isn't the absence of cravings — it's knowing they can't make you move.",
+ "Your future self is watching this exact moment, grateful.",
+ "Nicotine made promises it never kept. You're done collecting IOUs.",
+ "Strong people aren't the ones who never struggle — they're the ones still here."
+];
+
+const MOTIVS=[
+ {max:MS.h,msgs:["Every breath you take right now is cleaner than the last.","Minute one is the bravest minute. You're in it.","Your heart rate is already starting to settle. It noticed."]},
+ {max:MS.d,msgs:["Nicotine is leaving your bloodstream by the hour.","Tonight you'll sleep as someone who's quitting. Tomorrow, someone who quit yesterday.","Your body started healing the second you stopped. It hasn't paused since."]},
+ {max:3*MS.d,msgs:["You're in the storm — and storms end. 72 hours and nicotine is gone.","The fog and irritability are withdrawal, not you. Hold the line.","Day by day, the receptors in your brain are standing down."]},
+ {max:7*MS.d,msgs:["The worst is behind you. Cravings are now echoes, not orders.","Taste and smell are coming back online. Food is about to get better.","Almost a week. That's not luck — that's you."]},
+ {max:30*MS.d,msgs:["You're 9× more likely to stay quit than the day you started. Keep stacking days.","Your lungs are sweeping themselves clean right now, literally.","The person who couldn't imagine quitting? You're outgrowing them."]},
+ {max:365*MS.d,msgs:["This isn't quitting anymore. This is just who you are.","Months in. The money, the breath, the freedom — all compounding.","Cravings now are rare ghosts. You know how to walk through ghosts."]},
+ {max:Infinity,msgs:["A year+. You didn't just quit vaping — you proved you can rebuild yourself.","You're the success story someone else needs to hear.","Free. Fully, boringly, wonderfully free."]}
+];
+
+/* ---------------- helpers ---------------- */
+const $=id=>document.getElementById(id);
+function elapsed(){return S.quitTime?Math.max(0,Date.now()-S.quitTime):0;}
+function dailyCost(){return (S.podsPerWeek*S.costPerPod)/7;}
+function moneySaved(){return (elapsed()/MS.d)*dailyCost();}
+function fmt$(n){return "$"+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+function pad(n){return String(n).padStart(2,"0");}
+function durTxt(ms){
+  const d=Math.floor(ms/MS.d),h=Math.floor(ms%MS.d/MS.h),m=Math.floor(ms%MS.h/MS.m);
+  if(d>0)return d+"d "+h+"h"; if(h>0)return h+"h "+m+"m"; return m+"m";
+}
+function totalXP(){return Math.floor(elapsed()/MS.m)+S.bonusXP;}
+function toast(msg){const t=document.createElement("div");t.className="xp-toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2900);}
+
+/* ---------------- render: timer & motivation ---------------- */
+let motivIdx=0,lastMotivMin=-1;
+function renderTimer(){
+  const e=elapsed();
+  $("tD").textContent=Math.floor(e/MS.d);
+  $("tH").textContent=pad(Math.floor(e%MS.d/MS.h));
+  $("tM").textContent=pad(Math.floor(e%MS.h/MS.m));
+  $("tS").textContent=pad(Math.floor(e%MS.m/1000));
+  const min=Math.floor(e/MS.m);
+  if(min!==lastMotivMin){
+    lastMotivMin=min;
+    const band=MOTIVS.find(b=>e<b.max)||MOTIVS[MOTIVS.length-1];
+    motivIdx=(motivIdx+1)%band.msgs.length;
+    const el=$("motiv");el.style.opacity=0;
+    setTimeout(()=>{el.textContent=band.msgs[motivIdx];el.style.opacity=1;},300);
+  }
+}
+
+/* ---------------- render: milestones ---------------- */
+function buildMilestones(){
+  $("milestoneList").innerHTML=MILESTONES.map((m,i)=>`
+    <div class="mstone" id="ms${i}">
+      <div class="m-icon">${m.icon}</div>
+      <div class="m-body">
+        <div class="m-top"><span class="m-title">${m.title}</span><span class="m-when" id="msw${i}"></span></div>
+        <div class="m-desc">${m.desc}</div>
+        <div class="m-bar"><i id="msb${i}" style="width:0%"></i></div>
+      </div>
+    </div>`).join("");
+}
+function renderMilestones(){
+  const e=elapsed();
+  let done=0,nextIdx=-1;
+  MILESTONES.forEach((m,i)=>{
+    const el=$("ms"+i),bar=$("msb"+i),when=$("msw"+i);
+    const pct=Math.min(100,e/m.t*100);
+    bar.style.width=pct+"%";
+    el.classList.remove("done","next","locked");
+    if(e>=m.t){done++;el.classList.add("done");when.textContent="✓ unlocked";}
+    else{
+      if(nextIdx===-1){nextIdx=i;el.classList.add("next");when.textContent=pct.toFixed(1)+"% — "+durTxt(m.t-e)+" to go";}
+      else{el.classList.add("locked");when.textContent="in "+durTxt(m.t-e);}
+    }
+  });
+  // unlock pop animation when a new milestone completes during the session
+  if(prevDoneCount>=0&&done>prevDoneCount){
+    const ic=document.querySelector("#ms"+(done-1)+" .m-icon");
+    if(ic){ic.classList.add("pop");setTimeout(()=>ic.classList.remove("pop"),800);}
+    toast("🌟 Milestone unlocked: "+MILESTONES[done-1].title+"  (+100 XP)");
+    S.bonusXP+=100;persist();
+  }
+  prevDoneCount=done;
+  $("stMilestones").textContent=done+" / "+MILESTONES.length;
+  $("stNextM").textContent=nextIdx>=0?("next: "+MILESTONES[nextIdx].title):"all complete 🏆";
+  // continuous "healing now" line (updates every minute by the second)
+  if(nextIdx>=0){
+    const m=MILESTONES[nextIdx];
+    $("healingNow").innerHTML=`Right now your body is <b>${(e/m.t*100).toFixed(2)}%</b> of the way to <b>${m.title}</b> — ${m.desc.split(".")[0].toLowerCase()}. <span class="pct">${durTxt(m.t-e)} remaining.</span>`;
+  }else{
+    $("healingNow").innerHTML=`<b>Every tracked milestone is complete.</b> Your body has done a year of repair work — and it keeps compounding from here. 🏆`;
+  }
+}
+
+/* ---------------- render: badges ---------------- */
+function buildBadges(){
+  $("badgeGrid").innerHTML=BADGES.map(b=>`
+    <div class="badge" id="bg-${b.id}"><span class="bi">${b.icon}</span><div class="bn">${b.name}</div></div>`).join("");
+}
+function renderBadges(){
+  let earned=0,changed=false;
+  BADGES.forEach(b=>{
+    const ok=b.test(S);
+    const el=$("bg-"+b.id);
+    if(ok){
+      earned++;el.classList.add("earned");
+      if(!S.earned[b.id]){S.earned[b.id]=Date.now();changed=true;toast("🏅 Badge earned: "+b.name);}
+    }else el.classList.remove("earned");
+  });
+  $("badgeCount").textContent=earned+" earned";
+  if(changed)persist();
+}
+
+/* ---------------- render: stats / XP / gauge / money ---------------- */
+function renderStats(){
+  const e=elapsed(),xp=totalXP();
+  // money
+  const saved=moneySaved();
+  $("stMoney").textContent=fmt$(saved);
+  $("stMoneyRate").textContent=fmt$(dailyCost())+" / day not vaped";
+  $("moneyBig").textContent=fmt$(saved);
+  $("mDay").textContent=fmt$(dailyCost());
+  $("mMonth").textContent=fmt$(dailyCost()*30.44);
+  $("mYear").textContent=fmt$(dailyCost()*365.25);
+  let buy=null;for(const b of BUYS){if(saved>=b[0])buy=b;}
+  $("buyLine").textContent=buy?("That's already enough for "+buy[1]):(saved>0?("Keep going — "+fmt$(BUYS[0][0]-saved)+" to your first coffee on the house ☕"):"Set your usage below and watch this climb.");
+  // health score (log-scaled to 1 year)
+  const score=Math.min(100,Math.round(100*Math.log1p(e/MS.h)/Math.log1p(8760)));
+  $("stHealth").textContent=score;
+  $("gaugeArc").style.strokeDashoffset=132-(132*score/100);
+  // cravings
+  $("stCravings").textContent=S.cravingsResisted;
+  // streaks
+  $("stStreak").textContent=durTxt(e)||"0m";
+  const longest=Math.max(e,...S.history.map(h=>h.end-h.start),0);
+  $("stLongest").textContent=durTxt(longest)||"0m";
+  $("stAttempts").textContent="attempt #"+S.attempt;
+  // level / xp
+  let li=0;for(let i=0;i<LEVELS.length;i++){if(xp>=LEVELS[i].xp)li=i;}
+  const cur=LEVELS[li],next=LEVELS[li+1];
+  $("lvlName").textContent=cur.name;$("lvlName2").textContent=cur.name;$("lvlNum").textContent=li+1;
+  $("stXP").textContent=xp.toLocaleString()+" XP";
+  if(next){
+    const p=(xp-cur.xp)/(next.xp-cur.xp)*100;
+    $("xpFill").style.width=p+"%";
+    $("xpNext").textContent=(next.xp-xp).toLocaleString()+" XP to “"+next.name+"” · XP grows every minute puff-free";
+  }else{$("xpFill").style.width="100%";$("xpNext").textContent="Max level. Legend status. 🏆";}
+}
+
+/* ---------------- render: history ---------------- */
+function renderHistory(){
+  const el=$("histList");
+  if(!S.history.length){el.innerHTML='<div class="empty">No previous attempts logged — this is the one. 💪</div>';return;}
+  el.innerHTML=S.history.slice().reverse().map((h,i)=>{
+    const n=S.history.length-i;
+    return `<div class="hist-item"><span>Attempt #${n} — <b style="color:var(--blue)">${durTxt(h.end-h.start)}</b> puff-free</span><span class="d">${new Date(h.start).toLocaleDateString()} → ${new Date(h.end).toLocaleDateString()}</span></div>`;
+  }).join("");
+}
+
+/* ---------------- panic / breathing ---------------- */
+let breathTimer=null,phaseTimer=null;
+const CYCLE=[["Breathe in…",4,"inhale"],["Hold…",4,"hold"],["Slow exhale…",7,"exhale"]]; // 15s × 4 = 60s
+function startBreathing(){
+  $("breathView").style.display="block";$("afterView").style.display="none";
+  $("panicOverlay").classList.add("show");
+  let remain=60,ci=0,phaseLeft=CYCLE[0][1];
+  const orb=$("breathOrb");
+  function setPhase(){
+    const[label,secs,cls]=CYCLE[ci];
+    $("breathPhase").textContent=label;phaseLeft=secs;
+    orb.className="breath-orb "+cls;
+  }
+  setPhase();
+  $("breathCount").textContent=remain;
+  breathTimer=setInterval(()=>{
+    remain--;phaseLeft--;
+    $("breathCount").textContent=Math.max(0,remain);
+    if(remain<=0){clearInterval(breathTimer);finishBreathing();return;}
+    if(phaseLeft<=0){ci=(ci+1)%CYCLE.length;setPhase();}
+  },1000);
+}
+function finishBreathing(){
+  $("breathView").style.display="none";$("afterView").style.display="block";
+  $("tipText").textContent=TIPS[Math.floor(Math.random()*TIPS.length)];
+  $("quoteText").textContent="“"+QUOTES[Math.floor(Math.random()*QUOTES.length)]+"”";
+}
+function closePanic(){clearInterval(breathTimer);$("panicOverlay").classList.remove("show");}
+$("panicBtn").addEventListener("click",startBreathing);
+$("panicCancel").addEventListener("click",closePanic);
+$("panicDone").addEventListener("click",()=>{
+  S.cravingsResisted++;S.bonusXP+=50;persist();
+  closePanic();toast("+50 XP — craving #"+S.cravingsResisted+" beaten 🌊");
+  renderAll();
+});
+
+/* ---------------- relapse ---------------- */
+$("relapseBtn").addEventListener("click",()=>{
+  $("relapseStreakTxt").textContent=durTxt(elapsed())+" streak";
+  $("relapseOverlay").classList.add("show");
+});
+$("relapseCancel").addEventListener("click",()=>$("relapseOverlay").classList.remove("show"));
+$("relapseConfirm").addEventListener("click",()=>{
+  if(S.quitTime&&elapsed()>MS.m){S.history.push({start:S.quitTime,end:Date.now()});}
+  S.attempt++;
+  S.quitTime=Date.now();
+  // time-based badges recompute automatically; keep craving/money? money resets with timer; craving count is lifetime courage — keep it.
+  prevDoneCount=-1;lastMotivMin=-1;
+  persist();
+  $("relapseOverlay").classList.remove("show");
+  toast("New chapter started. Attempt #"+S.attempt+" — proud of you. 🌱");
+  renderAll(true);
+});
+
+/* ---------------- set time ---------------- */
+function toLocalInput(ms){
+  const d=new Date(ms-new Date(ms).getTimezoneOffset()*MS.m);
+  return d.toISOString().slice(0,16);
+}
+$("editQuitBtn").addEventListener("click",()=>{
+  $("quitInput").value=toLocalInput(S.quitTime||Date.now());
+  $("timeOverlay").classList.add("show");
+});
+$("timeCancel").addEventListener("click",()=>$("timeOverlay").classList.remove("show"));
+$("timeSave").addEventListener("click",()=>{
+  const v=$("quitInput").value;
+  if(!v)return;
+  const t=new Date(v).getTime();
+  if(isNaN(t))return;
+  S.quitTime=Math.min(t,Date.now());
+  prevDoneCount=-1;lastMotivMin=-1;
+  persist();
+  $("timeOverlay").classList.remove("show");
+  renderAll(true);
+});
+// close overlays on backdrop click
+[["panicOverlay",closePanic],["relapseOverlay",()=>$("relapseOverlay").classList.remove("show")],["timeOverlay",()=>$("timeOverlay").classList.remove("show")]]
+.forEach(([id,fn])=>$(id).addEventListener("click",e=>{if(e.target.id===id)fn();}));
+
+/* ---------------- money inputs ---------------- */
+$("podsPerWeek").addEventListener("input",e=>{S.podsPerWeek=Math.max(0,parseFloat(e.target.value)||0);persist();renderStats();renderBadges();});
+$("costPerPod").addEventListener("input",e=>{S.costPerPod=Math.max(0,parseFloat(e.target.value)||0);persist();renderStats();renderBadges();});
+
+/* ---------------- main loop ---------------- */
+function renderAll(suppressPops){
+  if(suppressPops)prevDoneCount=-1;
+  renderTimer();renderMilestones();renderBadges();renderStats();renderHistory();
+}
+async function init(){
+  buildMilestones();buildBadges();
+  const saved=await store.load();
+  if(saved){Object.assign(S,saved);}
+  $("podsPerWeek").value=S.podsPerWeek;
+  $("costPerPod").value=S.costPerPod;
+  if(!S.quitTime){
+    // first run: invite the user to set their last puff time
+    S.quitTime=Date.now();
+    $("quitInput").value=toLocalInput(Date.now());
+    $("timeOverlay").classList.add("show");
+  }
+  prevDoneCount=-1;
+  renderAll(true);
+  setInterval(()=>{renderTimer();renderMilestones();renderBadges();renderStats();},1000);
+}
+init();
+})();
+</script>
+</body>
+</html>
